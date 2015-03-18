@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<config>
+    <!--<default>
+        <Dachcom_OpenID>
+            <users>
+                <admin>http://admin.openid-provider.com/</admin>
+            </users>
+        </Dachcom_OpenID>
+    </default>-->
+    <modules>
+        <Dachcom_OpenID>
+            <version>1.0.0</version>
+        </Dachcom_OpenID>
+    </modules>
+    <global>
+        <models>
+            <Dachcom_OpenID>
+                <class>Dachcom_OpenID_Model</class>
+            </Dachcom_OpenID>
+
+            <admin>
+                <rewrite>
+                    <session>Dachcom_OpenID_Model_Admin_Session</session>
+                    <observer>Dachcom_OpenID_Model_Admin_Observer</observer>
+                </rewrite>
+            </admin>
+        </models>
+    </global>
+    <adminhtml>
+        <layout>
+            <updates>
+                <Dachcom_OpenID>
+                    <file>dachcom_openid/local.xml</file>
+                </Dachcom_OpenID>
+            </updates>
+        </layout>
+        <translate>
+            <modules>
+                <Dachcom_OpenID>
+                    <files>
+                        <default>Dachcom_OpenID.csv</default>
+                    </files>
+                </Dachcom_OpenID>
+            </modules>
+        </translate>
+    </adminhtml>
+</config>
