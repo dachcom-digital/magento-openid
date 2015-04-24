@@ -18,12 +18,15 @@ class Dachcom_OpenID_Model_Admin_Session extends Mage_Admin_Model_Session {
      * @return Mage_Admin_Model_User|null
      */
     public function login($username, $password, $request = NULL) {
+        if ($request === null) {
+            return parent::login($username, $password, $request);
+        }
+
         if ($request->isPost()) {
             $login = $request->getPost('login');
             if (!empty($login['openid_identifier'])) {
                 try {
-                    $openid = new LightOpenID($request->getHttpHost());
-
+                    $openid = new LightOpenID($this->getCurrentUrl($request));
                     $openid->identity = $login['openid_identifier'];
 
                     header('Location: ' . $openid->authUrl());
@@ -40,7 +43,7 @@ class Dachcom_OpenID_Model_Admin_Session extends Mage_Admin_Model_Session {
             $login = $request->getParams();
             if (!empty($login['openid_mode'])) {
                 try {
-                    $openid = new LightOpenID($request->getHttpHost());
+                    $openid = new LightOpenID($this->getCurrentUrl($request));
 
                     if ($openid->mode) {
                         if ($openid->validate()) {
@@ -79,9 +82,9 @@ class Dachcom_OpenID_Model_Admin_Session extends Mage_Admin_Model_Session {
                                 }
                             } catch (Mage_Core_Exception $e) {
                                 Mage::dispatchEvent('admin_session_user_login_failed', array(
-                                        'user_name' => $username,
-                                        'exception' => $e
-                                    ));
+                                    'user_name' => $username,
+                                    'exception' => $e
+                                ));
                                 if ($request && !$request->getParam('messageSent')) {
                                     Mage::getSingleton('adminhtml/session')
                                         ->addError($e->getMessage());
@@ -103,5 +106,13 @@ class Dachcom_OpenID_Model_Admin_Session extends Mage_Admin_Model_Session {
             }
         }
         return parent::login($username, $password, $request);
+    }
+
+    private function getCurrentUrl($request) {
+        $port = $request->getServer('SERVER_PORT');
+        if (empty($port) || $port === 80 || $port === 443) {
+            $port = '';
+        }
+        return $request->getScheme() . '://' . $request->getHttpHost() . ($port ? ':' . $port : '');
     }
 }
