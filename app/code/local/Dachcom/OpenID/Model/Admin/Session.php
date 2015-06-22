@@ -18,93 +18,112 @@ class Dachcom_OpenID_Model_Admin_Session extends Mage_Admin_Model_Session {
      * @return Mage_Admin_Model_User|null
      */
     public function login($username, $password, $request = NULL) {
-        if ($request === null) {
-            return parent::login($username, $password, $request);
-        }
 
-        if ($request->isPost()) {
-            $login = $request->getPost('login');
-            if (!empty($login['openid_identifier'])) {
-                try {
-                    $openid = new LightOpenID($this->getCurrentUrl($request));
-                    $openid->identity = $login['openid_identifier'];
+        if ($request instanceof Mage_Core_Controller_Request_Http) {
 
-                    header('Location: ' . $openid->authUrl());
-                    exit();
-                } catch (Exception $e) {
-                    Mage::getSingleton('adminhtml/session')
-                        ->addError($e->getMessage());
-                }
+            try {
 
-                return;
-            }
-        }
-        if ($request->isGet()) {
-            $login = $request->getParams();
-            if (!empty($login['openid_mode'])) {
-                try {
-                    $openid = new LightOpenID($this->getCurrentUrl($request));
+                if ($request->isPost()) {
 
-                    if ($openid->mode) {
-                        if ($openid->validate()) {
-                            try {
-                                /* @var $user Dachcom_OpenID_Model_Admin_User */
-                                $user = Mage::getModel('Dachcom_OpenID/admin_user');
-                                $user->login($openid->identity, $password);
-                                if ($user->getId()) {
-                                    $this->renewSession();
+                    $login = $request->getPost('login');
+                    if (!empty($login['openid_identifier'])) {
+                        try {
+                            $openid = new LightOpenID($this->getCurrentUrl($request));
+                            $openid->identity = $login['openid_identifier'];
 
-                                    if (Mage::getSingleton('adminhtml/url')
-                                        ->useSecretKey()
-                                    ) {
-                                        Mage::getSingleton('adminhtml/url')
-                                            ->renewSecretUrls();
-                                    }
-                                    $this->setIsFirstPageAfterLogin(TRUE);
-                                    $this->setUser($user);
-                                    $this->setAcl(Mage::getResourceModel('admin/acl')
-                                        ->loadAcl());
-
-                                    $alternativeUrl = $this->_getRequestUri($request);
-                                    $redirectUrl = $this->_urlPolicy->getRedirectUrl($user, $request, $alternativeUrl);
-                                    if ($redirectUrl) {
-                                        Mage::dispatchEvent('admin_session_user_login_success', array('user' => $user));
-                                        $this->_response->clearHeaders()
-                                            ->setRedirect($redirectUrl)
-                                            ->sendHeadersAndExit();
-                                    }
-
-                                    return $user;
-                                }
-                                else {
-                                    Mage::throwException(Mage::helper('adminhtml')
-                                        ->__('Invalid User Name or Password.'));
-                                }
-                            } catch (Mage_Core_Exception $e) {
-                                Mage::dispatchEvent('admin_session_user_login_failed', array(
-                                    'user_name' => $username,
-                                    'exception' => $e
-                                ));
-                                if ($request && !$request->getParam('messageSent')) {
-                                    Mage::getSingleton('adminhtml/session')
-                                        ->addError($e->getMessage());
-                                    $request->setParam('messageSent', TRUE);
-                                }
-                            }
-                            return;
+                            header('Location: ' . $openid->authUrl());
+                            exit();
+                        } catch (Exception $e) {
+                            Mage::getSingleton('adminhtml/session')
+                                ->addError($e->getMessage());
                         }
 
-                        Mage::getSingleton('adminhtml/session')
-                            ->addError('OpenID login failed.');
+                        return;
                     }
-                } catch (Exception $e) {
-                    Mage::getSingleton('adminhtml/session')
-                        ->addError($e->getMessage());
+
+                } else if ($request->isGet()) {
+
+                    $login = $request->getParams();
+                    if (!empty($login['openid_mode'])) {
+                        try {
+                            $openid = new LightOpenID($this->getCurrentUrl($request));
+
+                            if ($openid->mode) {
+                                if ($openid->validate()) {
+                                    try {
+                                        /* @var $user Dachcom_OpenID_Model_Admin_User */
+                                        $user = Mage::getModel('Dachcom_OpenID/admin_user');
+                                        $user->login($openid->identity, $password);
+                                        if ($user->getId()) {
+                                            $this->renewSession();
+
+                                            if (Mage::getSingleton('adminhtml/url')
+                                                ->useSecretKey()
+                                            ) {
+                                                Mage::getSingleton('adminhtml/url')
+                                                    ->renewSecretUrls();
+                                            }
+                                            $this->setIsFirstPageAfterLogin(TRUE);
+                                            $this->setUser($user);
+                                            $this->setAcl(Mage::getResourceModel('admin/acl')
+                                                ->loadAcl());
+
+                                            $alternativeUrl = $this->_getRequestUri($request);
+                                            $redirectUrl = $this->_urlPolicy->getRedirectUrl($user, $request, $alternativeUrl);
+                                            if ($redirectUrl) {
+                                                Mage::dispatchEvent('admin_session_user_login_success', array('user' => $user));
+                                                $this->_response->clearHeaders()
+                                                    ->setRedirect($redirectUrl)
+                                                    ->sendHeadersAndExit();
+                                            }
+
+                                            return $user;
+                                        }
+                                        else {
+                                            Mage::throwException(Mage::helper('adminhtml')
+                                                ->__('Invalid User Name or Password.'));
+                                        }
+                                    } catch (Mage_Core_Exception $e) {
+                                        Mage::dispatchEvent('admin_session_user_login_failed', array(
+                                            'user_name' => $username,
+                                            'exception' => $e
+                                        ));
+                                        if ($request && !$request->getParam('messageSent')) {
+                                            Mage::getSingleton('adminhtml/session')
+                                                ->addError($e->getMessage());
+                                            $request->setParam('messageSent', TRUE);
+                                        }
+                                    }
+                                    return;
+                                }
+
+                                Mage::getSingleton('adminhtml/session')
+                                    ->addError('OpenID login failed.');
+                            }
+                        } catch (Exception $e) {
+                            Mage::getSingleton('adminhtml/session')
+                                ->addError($e->getMessage());
+                        }
+
+                        return;
+                    }
                 }
 
-                return;
+            } catch (Mage_Core_Exception $e) {
+
+                Mage::dispatchEvent(
+                    'admin_session_user_login_failed',
+                    array('user_name' => $username, 'exception' => $e)
+                );
+
+                if ($request && !$request->getParam('messageSent')) {
+                    Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
+                    $request->setParam('messageSent', true);
+                }
             }
+
         }
+
         return parent::login($username, $password, $request);
     }
 
